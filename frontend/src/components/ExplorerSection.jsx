@@ -7,59 +7,45 @@ import StatusMessage from './StatusMessage.jsx'
 import { getDay } from '../services/api.js'
 import { formatTimestamp } from '../utils/format.js'
 
-const FIRST_DATE = '2026-01-01'
-const LAST_DATE = '2026-01-31'
-
-function ExplorerSection() {
-  const [selectedDate, setSelectedDate] = useState(FIRST_DATE)
-  const [day, setDay] = useState(null)
-  const [error, setError] = useState(null)
-  const [loading, setLoading] = useState(true)
+// The selected date lives in the Dashboard, so the daily accuracy chart can change it too.
+function ExplorerSection({ selectedDate, onDateChange, minDate, maxDate, monthMetrics }) {
+  // result remembers which request it belongs to, so a slow old answer is never shown for a new date.
+  const [result, setResult] = useState(null)
   const [reloadKey, setReloadKey] = useState(0)
+  const requestKey = `${selectedDate}#${reloadKey}`
 
-  // Load the selected day whenever the date changes (or after "Try again").
   useEffect(() => {
     let cancelled = false
 
     getDay(selectedDate)
       .then((data) => {
         if (!cancelled) {
-          setDay(data)
+          setResult({ key: requestKey, day: data, error: null })
         }
       })
       .catch((err) => {
         if (!cancelled) {
-          setError(err.message)
-        }
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setLoading(false)
+          setResult({ key: requestKey, day: null, error: err.message })
         }
       })
 
     return () => {
       cancelled = true
     }
-  }, [selectedDate, reloadKey])
+  }, [selectedDate, requestKey])
 
-  function handleDateChange(newDate) {
-    setSelectedDate(newDate)
-    setLoading(true)
-    setError(null)
-  }
+  const loading = result === null || result.key !== requestKey
+  const error = loading ? null : result.error
+  const day = loading ? null : result.day
 
   function handleRetry() {
-    setLoading(true)
-    setError(null)
     setReloadKey((key) => key + 1)
   }
 
   const hasAnyData = day ? day.rows.some((row) => row.forecast_mw !== null || row.actual_mw !== null) : false
-  const showDay = day && !loading && !error
 
   return (
-    <section>
+    <section id="explorer" className="explorer">
       <div className="section-heading">
         <h2>Forecast explorer</h2>
         <p className="muted">
@@ -71,9 +57,9 @@ function ExplorerSection() {
       <div className="card explorer-controls">
         <DateSelector
           value={selectedDate}
-          minDate={FIRST_DATE}
-          maxDate={LAST_DATE}
-          onChange={handleDateChange}
+          minDate={minDate}
+          maxDate={maxDate}
+          onChange={onDateChange}
         />
       </div>
 
@@ -95,18 +81,19 @@ function ExplorerSection() {
         />
       )}
 
-      {showDay && (
+      {day && (
         <>
           <div className="card day-intro">
             <h3>Delivery date {day.date}</h3>
             <p>
               Each forecast shown is the latest one published at or before{' '}
               <strong>{formatTimestamp(day.cutoff_utc)} UTC</strong>, the assumed decision time on the
-              previous day. The metrics below cover <strong>this day only</strong>, not the whole month.
+              previous day. The metrics below cover <strong>this day only</strong>; the smaller line on
+              each card shows the whole-month value for comparison.
             </p>
           </div>
 
-          <DayMetrics metrics={day.metrics} />
+          <DayMetrics metrics={day.metrics} monthMetrics={monthMetrics} />
 
           {hasAnyData ? (
             <>

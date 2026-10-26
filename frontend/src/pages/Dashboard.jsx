@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import AccuracySection from '../components/AccuracySection.jsx'
 import ExplorerSection from '../components/ExplorerSection.jsx'
 import OverviewSection from '../components/OverviewSection.jsx'
 import StatusMessage from '../components/StatusMessage.jsx'
@@ -9,6 +10,8 @@ function Dashboard() {
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(true)
   const [reloadKey, setReloadKey] = useState(0)
+  // The delivery date shown in the explorer. The daily accuracy chart can change it too.
+  const [selectedDate, setSelectedDate] = useState(null)
 
   // Load the monthly overview when the page opens, and again after "Try again".
   useEffect(() => {
@@ -42,6 +45,16 @@ function Dashboard() {
     setReloadKey((key) => key + 1)
   }
 
+  // Called when a day is clicked in the accuracy chart: select it and scroll to the explorer.
+  function handleSelectFromChart(date) {
+    setSelectedDate(date)
+    document.getElementById('explorer')?.scrollIntoView({ block: 'start' })
+  }
+
+  const ready = overview && !loading && !error
+  // Until the user picks a date, show the first day of the period.
+  const activeDate = selectedDate || (overview ? overview.period.start : null)
+
   return (
     <div className="app">
       <header className="app-header">
@@ -70,10 +83,21 @@ function Dashboard() {
           />
         )}
 
-        {overview && !loading && !error && (
+        {ready && (
           <>
             <OverviewSection overview={overview} />
-            <ExplorerSection />
+            <AccuracySection
+              selectedDate={activeDate}
+              onSelectDate={handleSelectFromChart}
+              monthMae={overview.metrics.mae_mw}
+            />
+            <ExplorerSection
+              selectedDate={activeDate}
+              onDateChange={setSelectedDate}
+              minDate={overview.period.start}
+              maxDate={overview.period.end}
+              monthMetrics={overview.metrics}
+            />
           </>
         )}
       </main>

@@ -31,6 +31,10 @@ export function getOverview() {
   return getJson('/api/overview')
 }
 
+export function getAccuracy() {
+  return getJson('/api/accuracy')
+}
+
 // date looks like "2026-01-01"
 export function getDay(date) {
   return getJson(`/api/day?date=${encodeURIComponent(date)}`)
