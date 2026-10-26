@@ -1,3 +1,4 @@
+import logging
 from datetime import date, timedelta
 
 from fastapi import APIRouter, HTTPException, Query
@@ -6,17 +7,33 @@ from app import config
 from app.analysis.metrics import compute_metrics, daily_summaries
 from app.analysis.processing import build_hourly_table, decision_cutoff, format_utc
 from app.services import data_cache
+from app.services.elexon_client import ElexonAPIError
 
 router = APIRouter(prefix="/api")
+logger = logging.getLogger(__name__)
 
 FIRST_DAY = config.ANALYSIS_START.date()
 LAST_DAY = (config.ANALYSIS_END - timedelta(days=1)).date()
 
 
 def _load_rows() -> list:
-    """Hourly forecast-versus-actual rows for the whole analysis period."""
-    actuals, forecasts = data_cache.get_raw_records()
-    return build_hourly_table(actuals, forecasts)
+    """Hourly forecast-versus-actual rows for the whole analysis period.
+
+    Elexon problems are re-raised so main.py answers with HTTP 502. Any other unexpected
+    problem becomes a clear HTTP 500 message. The message is raised as an HTTPException
+    so that the response still carries the CORS headers and the browser can read it.
+    """
+    try:
+        actuals, forecasts = data_cache.get_raw_records()
+        return build_hourly_table(actuals, forecasts)
+    except ElexonAPIError:
+        raise
+    except Exception as exc:
+        logger.exception("Unexpected error while processing Elexon data")
+        raise HTTPException(
+            status_code=500,
+            detail="Unexpected error while processing the data. See the backend log for details.",
+        ) from exc
 
 
 def _assumption() -> dict:

@@ -1,8 +1,11 @@
+import logging
+import math
 from datetime import date, datetime, time, timedelta, timezone
 
 from app import config
 
 UTC = timezone.utc
+logger = logging.getLogger(__name__)
 
 
 def parse_utc(text: str) -> datetime:
@@ -32,25 +35,74 @@ def decision_cutoff(
     return datetime.combine(cutoff_date, cutoff_time, tzinfo=UTC)
 
 
+def _to_float(value):
+    """The value as a finite float, or None when it is missing or not a usable number."""
+    if value is None or isinstance(value, bool):
+        return None
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    return number if math.isfinite(number) else None
+
+
+def _parse_actual(record):
+    """(start, publish_time, generation) of an actual record, or None if the record is unusable."""
+    try:
+        start = parse_utc(record["startTime"])
+        publish_text = record.get("publishTime")
+        publish = parse_utc(publish_text) if publish_text else datetime.min.replace(tzinfo=UTC)
+    except (KeyError, TypeError, ValueError, AttributeError):
+        return None
+    generation = _to_float(record.get("generation"))
+    if generation is None:
+        return None
+    return start, publish, generation
+
+
+def _parse_forecast(record):
+    """(delivery_time, publish_time, generation) of a forecast record, or None if unusable."""
+    try:
+        delivery = parse_utc(record["startTime"])
+        publish = parse_utc(record["publishTime"])
+    except (KeyError, TypeError, ValueError, AttributeError):
+        return None
+    generation = _to_float(record.get("generation"))
+    if generation is None:
+        return None
+    return delivery, publish, generation
+
+
+def _report_skipped(kind: str, skipped: int) -> None:
+    if skipped:
+        logger.warning(
+            "Ignored %s %s record(s) with a missing or invalid timestamp or generation value.",
+            skipped,
+            kind,
+        )
+
+
 def build_hourly_actuals(actual_records: list) -> dict:
     """Turn half-hourly actual records into hourly values.
 
     Returns {hour_start: {"actual_mw": float or None, "complete": bool}}.
+    - Unusable records (missing or invalid fields) are ignored, so the hour shows as incomplete.
     - Duplicate records for the same half-hour: the latest publishTime wins.
     - An hour is complete only when both :00 and :30 exist. Then its value is
       the mean of the two. Incomplete hours get actual_mw None (never guessed).
     """
     latest = {}
+    skipped = 0
     for record in actual_records:
-        generation = record.get("generation")
-        if generation is None:
+        parsed = _parse_actual(record)
+        if parsed is None:
+            skipped += 1
             continue
-        start = parse_utc(record["startTime"])
-        publish_text = record.get("publishTime")
-        publish = parse_utc(publish_text) if publish_text else datetime.min.replace(tzinfo=UTC)
+        start, publish, generation = parsed
         existing = latest.get(start)
         if existing is None or publish > existing[0]:
-            latest[start] = (publish, float(generation))
+            latest[start] = (publish, generation)
+    _report_skipped("actual", skipped)
 
     halves_by_hour = {}
     for start, (_, generation) in latest.items():
@@ -75,20 +127,23 @@ def select_eligible_forecasts(
     Returns {delivery_hour: {"forecast_mw": float, "publish_time": datetime}}.
     Forecasts published after the cutoff are ignored. If nothing is eligible,
     the delivery hour is simply absent (missing, never filled from a later forecast).
+    Unusable records (missing or invalid fields) are ignored.
     """
     selected = {}
+    skipped = 0
     for record in forecast_records:
-        generation = record.get("generation")
-        if generation is None:
+        parsed = _parse_forecast(record)
+        if parsed is None:
+            skipped += 1
             continue
-        delivery = parse_utc(record["startTime"])
-        publish = parse_utc(record["publishTime"])
+        delivery, publish, generation = parsed
         cutoff = decision_cutoff(delivery.date(), cutoff_time)
         if publish > cutoff:
             continue
         current = selected.get(delivery)
         if current is None or publish > current["publish_time"]:
-            selected[delivery] = {"forecast_mw": float(generation), "publish_time": publish}
+            selected[delivery] = {"forecast_mw": generation, "publish_time": publish}
+    _report_skipped("forecast", skipped)
     return selected
 
 

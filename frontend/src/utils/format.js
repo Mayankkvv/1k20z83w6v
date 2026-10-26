@@ -1,6 +1,8 @@
+// signDisplay "negative" hides the minus sign when a tiny negative number rounds to zero ("0.0", not "-0.0").
 const oneDecimal = new Intl.NumberFormat('en-GB', {
   minimumFractionDigits: 1,
   maximumFractionDigits: 1,
+  signDisplay: 'negative',
 })
 const wholeNumber = new Intl.NumberFormat('en-GB', { maximumFractionDigits: 0 })
 
@@ -15,11 +17,12 @@ export function formatMw(value) {
 }
 
 // Same as formatMw but shows a plus sign for positive numbers (used for errors).
+// A number that rounds to 0.0 gets no sign at all.
 export function formatSignedMw(value) {
   if (isMissing(value)) {
     return NOT_AVAILABLE
   }
-  const sign = value > 0 ? '+' : ''
+  const sign = Math.round(value * 10) / 10 > 0 ? '+' : ''
   return `${sign}${oneDecimal.format(value)} MW`
 }
 
