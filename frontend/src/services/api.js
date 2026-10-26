@@ -30,3 +30,8 @@ async function getJson(path) {
 export function getOverview() {
   return getJson('/api/overview')
 }
+
+// date looks like "2026-01-01"
+export function getDay(date) {
+  return getJson(`/api/day?date=${encodeURIComponent(date)}`)
+}

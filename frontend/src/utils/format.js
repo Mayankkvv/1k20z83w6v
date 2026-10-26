@@ -31,6 +31,25 @@ export function formatCount(value) {
   return isMissing(value) ? NOT_AVAILABLE : wholeNumber.format(value)
 }
 
+// "2025-12-31T09:30:00Z" -> "2025-12-31 09:30"
+export function formatTimestamp(value) {
+  return isMissing(value) ? NOT_AVAILABLE : value.slice(0, 16).replace('T', ' ')
+}
+
+// "2026-01-01T07:00:00Z" -> "07:00"
+export function formatHour(value) {
+  return value.slice(11, 16)
+}
+
+// Short labels for the data table.
+export const STATUS_SHORT_LABELS = {
+  ok: 'OK',
+  missing_forecast: 'No eligible forecast',
+  incomplete_actual: 'Incomplete actual',
+  missing_actual: 'No actual data',
+  missing_forecast_and_actual: 'No data',
+}
+
 // Plain-English names for the data-quality statuses sent by the backend.
 export const STATUS_LABELS = {
   missing_forecast: 'hours with no eligible forecast',

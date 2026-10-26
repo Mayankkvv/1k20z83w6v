@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import ExplorerSection from '../components/ExplorerSection.jsx'
 import OverviewSection from '../components/OverviewSection.jsx'
 import StatusMessage from '../components/StatusMessage.jsx'
 import { getOverview } from '../services/api.js'
@@ -69,7 +70,12 @@ function Dashboard() {
           />
         )}
 
-        {overview && !loading && !error && <OverviewSection overview={overview} />}
+        {overview && !loading && !error && (
+          <>
+            <OverviewSection overview={overview} />
+            <ExplorerSection />
+          </>
+        )}
       </main>
     </div>
   )
