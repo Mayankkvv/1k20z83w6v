@@ -1,0 +1,12 @@
+.venv
+venv
+__pycache__
+*.pyc
+.pytest_cache
+.env
+.env.*
+tests
+Dockerfile
+.dockerignore
+live_check_elexon.py
+reproduce_january.py

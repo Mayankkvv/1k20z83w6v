@@ -1,0 +1,25 @@
+# Runs the whole app locally:  docker compose up --build
+# Frontend: http://localhost:5173    Backend API docs: http://localhost:8000/docs
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      # Web addresses allowed to call the API from a browser (comma-separated).
+      CORS_ORIGINS: "http://localhost:5173,http://127.0.0.1:5173"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Address the BROWSER uses to reach the backend. Built into the website files.
+        VITE_API_BASE_URL: "http://localhost:8000"
+    ports:
+      - "5173:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
