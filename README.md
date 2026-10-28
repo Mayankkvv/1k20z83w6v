@@ -335,6 +335,12 @@ Errors are always `{"detail": "..."}`: `400` for a date outside 1 to 31 January 
 
 This project was built with substantial help from AI tools. I am disclosing this openly.
 
-- **Claude (Anthropic)** was used as a development mentor and pair programmer throughout. It helped with investigating the Elexon data, designing the processing and cutoff logic, writing the backend, the frontend, the tests, the Docker setup and this README, and planning the Vercel deployment. It also researched the day-ahead market closing times used for the cutoff assumption. Claude drafted code and documents step by step; I ran the commands, tested each step, reported the results, and decided what to keep.
+### AI Tool Usage Disclosure
 
-What I verified myself: I ran the backend and frontend locally, ran the tests, ran the Docker setup, deployed to Vercel, and checked the deployed dashboard in a browser. The cutoff time and the other assumptions listed above should be read as design choices that I can explain and that are open to change, not as facts supplied by the data.
+Claude (Anthropic) was used as a supporting development assistant throughout this project. I used it for technical guidance, exploring the Elexon APIs, discussing data-processing and forecast cutoff logic, troubleshooting issues, and getting feedback on the backend, frontend, testing, Docker setup, and deployment.
+
+I led the development workflow by breaking the project into steps, running commands, integrating and adapting the suggested implementations, testing the application, investigating unexpected results, and making decisions about the architecture and design. I also verified the local application, automated tests, Docker setup, and deployed dashboard.
+
+The day-ahead cutoff and other assumptions were treated as explicit design choices rather than facts directly provided by the datasets. I reviewed these choices and documented them so they can be understood and changed when needed.
+
+AI assistance was part of my development process, while implementation, verification, and final project decisions remained my responsibility.
