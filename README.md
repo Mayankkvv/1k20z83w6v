@@ -124,11 +124,10 @@ flowchart LR
 │       ├── services/api.js      The only place that calls the backend
 │       ├── utils/format.js      Number, time and label formatting
 │       └── index.css            Styles
-├── scripts/research/            Early scripts used to investigate the Elexon data before the app was built
-└── context/                     Project notes: CURRENT_STATE.md, STEP_LOG.md, DECISIONS.md
+└── scripts/research/            Early scripts used to investigate the Elexon data before the app was built
+
 ```
 
-`context/DECISIONS.md` records every important design decision and why it was made.
 
 ## The Elexon datasets
 

@@ -14,8 +14,6 @@ ACTUALS_PUBLISH_TO = ANALYSIS_END + timedelta(hours=1)
 # Jan 31 happens on Jan 30, so we do not need forecasts published after Jan 31 00:00.
 FORECAST_PUBLISH_FROM = ANALYSIS_START - timedelta(days=2)
 FORECAST_PUBLISH_TO = ANALYSIS_END - timedelta(days=1)
-
-# Day-ahead decision cutoff (ASSUMPTION, see context/DECISIONS.md).
 # 09:50 UK time = gate closure of the Nord Pool N2EX GB day-ahead auction.
 # The EPEX GB day-ahead auction closes earlier, at 09:20 UK time.
 # In January UK time equals UTC, so these times are used as UTC.
